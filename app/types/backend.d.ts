@@ -29,10 +29,7 @@ declare global {
     result: T[];
   }
   interface ILogin {
-    _id: string;
-    username: string;
-    email: string;
-    name: string;
+    user: { _id: string; name: string; email: string };
 
     access_token: string;
   }

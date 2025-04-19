@@ -1,13 +1,14 @@
-import Link from "next/link";
+import Banner from "@/app/components/banner";
 import Layout from "./components/Layout/layout";
 
-export default function Home() {
+import { auth } from "@/auth";
+export default async function Home() {
+  const session: any = await auth();
+
   return (
     <div>
       <Layout>
-        <Link href={"/Ahihi"}>hihi </Link>
-        <div>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Harum enim accusamus consectetur dolore voluptatibus sapiente nostrum velit eum, explicabo vel odit repudiandae rerum molestias! Iusto incidunt officiis accusamus numquam odio?</div>
-        <div>đấ</div>
+        <Banner session={session} />
       </Layout>
     </div>
   );

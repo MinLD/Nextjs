@@ -3,6 +3,7 @@ import {
   InactiveAccountError,
   InvalidEmailPasswordError,
 } from "@/app/(util)/errors";
+
 import { IUser } from "@/app/types/next-auth";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
@@ -11,7 +12,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
       credentials: {
-        email: {},
+        username: {},
         password: {},
       },
       authorize: async (credentials) => {
@@ -19,31 +20,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const res = await sendRequest<IBackendRes<ILogin>>({
           method: "POST",
           body: {
-            username: credentials.email,
+            username: credentials.username,
             password: credentials.password,
           },
-          url: "http://localhost:1000/api/v1/auth/login",
+          url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/auth/login`,
         });
         console.log("📦 Login API response:", res);
 
         if (res.statusCode === 201) {
           return {
-            id: res?.data?._id,
-            name: res?.data?.name,
-            email: res?.data?.email,
-            access_token: res?.data?.access_token,
+            _id: res.data?.user?._id,
+            name: res.data?.user?.name,
+            email: res.data?.user?.email,
+            access_token: res.data?.access_token,
           };
-        }
-        //sai mật khẩu
-        else if (+res.statusCode === 401) {
-          // throw new InvalidEmailPasswordError();
-          throw new Error("Email hoặc mật khẩu không đúng");
-        } else if (+res.statusCode === 400) {
-          throw new Error("Tài khoản chưa được xác thực");
-          // throw new InactiveAccountError();
+        } else if (+res.statusCode === 401) {
+          throw new InvalidEmailPasswordError();
+        } else if (+res.statusCode === 502) {
+          throw new InactiveAccountError();
         } else {
-          // throw new Error("Internal server error");
-          throw new Error("Lỗi không xác định");
+          throw new Error("Internal server error");
         }
       },
     }),
@@ -56,15 +52,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     jwt({ token, user }) {
       if (user) {
-        console.log("🧠 user in jwt:", user);
+        console.log("🔑 user:", user);
+        // User is available during sign-in
         token.user = user as IUser;
       }
       return token;
     },
     session({ session, token }) {
-      console.log("💬 token.user in session callback:", token.user);
+      console.log("🔑 session:", session);
       (session.user as IUser) = token.user;
       return session;
+    },
+    authorized: async ({ auth }) => {
+      console.log("🔑 auth:", auth);
+      // Logged in users are authenticated,
+      //otherwise redirect to login page
+      return !!auth;
     },
   },
 });
